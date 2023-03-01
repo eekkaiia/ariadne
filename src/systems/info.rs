@@ -59,27 +59,33 @@ impl Info {
     }
     /// draw_panel() displays info in window widget
     pub fn draw_panel(&mut self) {
-        root_ui().window(hash!(), Vec2::new(18., 19.), Vec2::new(190., 155.), |ui| {
-            widgets::Group::new(hash!(), Vec2::new(186., 122.))
+        let tile = (((self.my / 48.0).trunc() * 19.0) + (self.mx / 48.0).trunc()) as u8;
+        let (x_tile, y_tile) = self.tile_2_cr(tile);
+        root_ui().window(hash!(), Vec2::new(18., 19.), Vec2::new(190., 164.), |ui| {
+            widgets::Group::new(hash!(), Vec2::new(186., 133.))
                 .position(Vec2::new(1., 1.))
                 .ui(ui, |ui| {
-                    
                     ui.label(Vec2::new(7., 0.), "Frame Times");
                     ui.label(Vec2::new(11., 15.), &format!("FPS:       {:2}", &get_fps()));
                     ui.label(Vec2::new(11., 30.), &format!("Current:   {:8.5}", &self.current_ft));
                     ui.label(Vec2::new(11., 45.), &format!("Average:   {:8.5}", &self.average_ft));
                     ui.label(Vec2::new(11., 60.), &format!("Longest:   {:8.5}", &self.longest_ft));
                     ui.label(Vec2::new(7., 80.), "Mouse Coordinates");
-                    ui.label(Vec2::new(11., 95.), &format!("x: {:4}     y: {:4}", &self.mx, &self.my));
-                    
+                    ui.label(Vec2::new(11., 95.), &format!("x:{:4}  y:{:4}", &self.mx, &self.my));
+                    ui.label(Vec2::new(11., 110.), &format!("tx:{:3}  ty:{:3}  t: {:3}", &x_tile, &y_tile, &tile));
                 });
             widgets::Group::new(hash!(), Vec2::new(186., 25.))
-                .position(Vec2::new(1., 125.))
+                .position(Vec2::new(1., 136.))
                 .ui(ui, |ui| {
                     let mut grey: f32 = self.background.r;
                     ui.slider(hash!(), " Background", 0f32..1f32, &mut grey);
                     self.background = Color::new(grey, grey, grey, 1.);
                 });
             });
+    }
+    pub fn tile_2_cr(&self, idx: u8) -> (f32, f32) {
+        let row: f32 = (idx as f32 / 19.0).trunc();
+        let col: f32 = (idx % 19) as f32;
+        (col, row)
     }
 }

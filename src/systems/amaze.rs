@@ -52,7 +52,7 @@ impl Amaze {
         let solutions: Vec<Vec<usize>> = Vec::new();
         let thread: Vec<usize> = Vec::new();
         let level_sheets: Vec<Vec<Texture2D>> = Vec::new();        
-        let texture_cell_sizes: Vec<usize> = vec![5, 20];
+        let texture_cell_sizes: Vec<usize> = vec![5, 15, 20];
         
         Self {
             width,
@@ -241,12 +241,9 @@ impl Amaze {
         pictures
     }
     /// theseus_move_forward() evalutates a move within maze
-    pub fn theseus_move_forward(&mut self, theseus: &mut Theseus) -> (bool, usize) {
-        let play_sound: bool = true;
-        let mut sound_index: usize = 1;
-        // let (_lost_col, _lost_row, _lost_level) = self.idx_to_xyz(theseus.chamber);
+    pub fn theseus_move_forward(&mut self, theseus: &mut Theseus) {
         match self.rooms[theseus.chamber][theseus.direction as usize] { // [E, S, W, N, U, D] with 0 = plain wall, 1 = portal, 2 = window, tbd
-            0 => sound_index = 0,
+            0 => (),
             1 => {
                 self.visited[theseus.chamber] = true;
                 match theseus.direction {
@@ -293,11 +290,10 @@ impl Amaze {
                     _ => eprintln!("!!!Unexpected direction: {:?}", &theseus.direction),
                 }
             },
-            2 => sound_index = 0,
-            3 => sound_index = 0,
+            2 => (),
+            3 => (),
             _ => eprintln!("!!!Unexpected direction: {:?} or chamber: {:?}", &theseus.direction, &theseus.chamber),
         }
-        (play_sound, sound_index)
     }
     /// idx_to_xyz() converts cell vector index into (x, y, z) coordinates
     pub fn idx_to_xyz(&self, idx: usize) -> (u32, u32, u32) {

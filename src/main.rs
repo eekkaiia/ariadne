@@ -19,6 +19,8 @@ mod systems;
 use crate::systems::*;
 use crate::entities::*;
 
+const WINDOW_WIDTH: f32 = 912.0;
+const WINDOW_DEPTH: f32 = 528.0;
 const MAZE_WIDTH: usize = 25;
 const MAZE_DEPTH: usize = 25;
 const MAZE_LEVEL: usize = 25;
@@ -37,29 +39,27 @@ fn window_configuration() -> Conf {
 
 #[macroquad::main(window_configuration)]
 async fn main() {
-    // load assets - AFAIK must be done within async main
+    // load assets - AFAIK must be done within async main - commented out for wasm version
     // let mut game_sound: Vec<Sound> = Vec::new();
     // game_sound.push(audio::load_sound("assets/audio/splat.ogg").await.unwrap());
     // game_sound.push(audio::load_sound("assets/audio/sound_view_focused_or_selected.ogg").await.unwrap());
     // initialize systems
     let mut info = Info::default();
-    let mut stage = Stage::new(screen_width(), screen_height());
+    let mut control = Control::new();
+    let mut stage = Stage::new(WINDOW_WIDTH, WINDOW_DEPTH);
     let mut maze = Amaze::new(MAZE_WIDTH, MAZE_DEPTH, MAZE_LEVEL);
     maze.create_maze(START_CELL);
     // initialize entities
     let mut theseus = Theseus::new(START_CELL);
     let mut paraphernalia= Paraphernalia::new();
     paraphernalia.fill_rucksack(START_CELL);
-    paraphernalia.fill_maze(START_CELL);
+    paraphernalia.fill_maze(&maze);
     eprintln!("Starting game loop...");
     loop { // macroquad game loop
-        // get keyboard/mouse interface
-        let (_play_sound, _sound_index) = stage.interface(&mut maze, &mut theseus, &mut paraphernalia);
-        // if play_sound { audio::play_sound_once(game_sound[sound_index]); };
+        control.update(&mut stage, &mut maze, &mut theseus, &mut paraphernalia);
         paraphernalia.update(&mut theseus, &maze);
-        // draw theseus view
-        stage.update_stage(&mut info, &mut maze, &mut theseus, &paraphernalia);
-        if stage.user_decided_to_exit {
+        stage.update(&mut info, &mut control, &mut maze, &mut theseus, &paraphernalia);
+        if control.user_decided_to_exit {
 			eprintln!("...Ending game loop");
             break;
         }
@@ -76,4 +76,6 @@ change TITLE and 'load("mquad.wasm")' to crate name
 copy [crate name].wasm from ./target/wasm-unknown-unknown/debug/ or ../release/
 basic-http-server
 http://127.0.0.1:4000
+
+on github:  https://eekkaiia.github.io/ariadne/
 */
