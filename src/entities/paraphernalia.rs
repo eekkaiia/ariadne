@@ -6,7 +6,7 @@ use macroquad::{
     math::*,
     shapes::*,
     text::*,
-    //texture::*,
+    texture::*,
     //ui::root_ui,
     //window::*,
 };
@@ -35,7 +35,8 @@ pub struct Parapherna {
     pub tile: u8,
     pub colour: Color,
     pub active: bool,
-    pub examine: Option<Vec<Vec<String>>>,
+    pub examine_text: Option<Vec<Vec<String>>>,
+    pub examine_image: Option<Texture2D>,
 }
 impl Parapherna {
     pub fn new(name: String, chamber: usize, disposition: Disposition, tile: u8, colour: Color) -> Self {
@@ -47,11 +48,12 @@ impl Parapherna {
             tile,
             colour,
             active: false,
-            examine: None,
+            examine_text: None,
+            examine_image: None,
         }
     }
-    pub fn draw_examine_parapherna(&self, mut page: usize, glasses: bool) {
-        match &self.examine {
+    pub fn draw_examine_text_parapherna(&self, mut page: usize, glasses: bool) {
+        match &self.examine_text {
             None => (),
             Some(pages) => {
                 page %= pages.len();
@@ -61,23 +63,23 @@ impl Parapherna {
                     left_col,
                     top_row,
                     9.0 * TILE,
-                    9.0 * TILE,
+                    20.0 * pages[page].len() as f32 + 18.0,
                     WHITE,
                 );
                 for ii in 0..pages[page].len() {
-                    if glasses {
+                    if glasses || self.name != "Correspondence".to_string() {
                         draw_text(
                             &pages[page][ii],
-                            left_col + 20.0,
+                            left_col + 12.0,
                             top_row + (20.0 * (ii + 1) as f32),
                             16.0,
                             DARKGRAY,
                         );
                     } else {
-                        for jj in 0..9 {
+                        for jj in 0..7 {
                             draw_text(
                                 &pages[page][ii],
-                                left_col + 20.0 + jj as f32,
+                                left_col + 12.0 + jj as f32,
                                 top_row + (20.0 * (ii + 1) as f32),
                                 16.0,
                                 DARKGRAY,
@@ -131,39 +133,94 @@ impl Paraphernalia {
             if self.parapherna[jj].name == "Bandana".to_string() {
                 self.parapherna[jj].disposition = Disposition::OnNeck;
                 self.parapherna[jj].tile = 40;
-                self.parapherna[jj].examine = Some(vec![vec![
-                    "A red silk bandana tied in a knot so".to_string(),
-                    "you can wear it around your neck.".to_string(),
+                self.parapherna[jj].examine_text = Some(vec![vec![
+                    "A silk bandana tied in a knot so".to_string(),
+                    "it can be worn around the neck.".to_string(),
+                    "Bright red color distracts bulls.".to_string(),
                 ]]);
             }
             if self.parapherna[jj].name == "Correspondence".to_string() {
-                self.parapherna[jj].examine = Some(vec![
-                    vec!["TELEGRAM".to_string()],
-                    vec!["DEAR X".to_string()],
+                self.parapherna[jj].examine_text = Some(vec![
+                    vec![
+                        "A bundle of letters, telegrams, postcards, etc.".to_string(),
+                        "Use left/right arrow keys to read in no".to_string(),
+                        "particular order.".to_string(),
+                    ],
+                    vec![
+                        "TELEGRAM".to_string(),
+                        "DO NOT BOTHER RETURNING NEXT SEMESTER STOP".to_string(),
+                        "YOUR ACTIONS IN PARIS WERE ILL-CONSIDERED STOP".to_string(),
+                        "WHEN THINGS QUIET DOWN WILL ADVOCATE THAT".to_string(),
+                        "YOUR MASTERS BE AWARDED IN PASSING STOP".to_string(),
+                        "FORGET ABOUT PHD STOP".to_string(),
+                        "HOPE YOU KNOW WHAT YOU ARE DOING STOP".to_string(),
+                    ],
+                    vec![
+                        "Dear X".to_string(),
+                        "How mysterious. I approve and appreciate your manner and".to_string(),
+                        "discretion in contacting me by post. For nearly half a".to_string(),
+                        "century I have been bothered by people, some respectable,".to_string(),
+                        "most not, with questions about my parents work. The fact".to_string(),
+                        "that I am replying to your letter is indication that your".to_string(),
+                        "conjecture is correct, the answer to the location of the".to_string(),
+                        "labyrinth is really that simple. I will not be more".to_string(),
+                        "explicit in writing.".to_string(),
+                    ],
+                    vec![
+                        "As to your other questions, there is not much more I can".to_string(),
+                        "add that has not appeared in my parents published material".to_string(),
+                        "with a few exceptions. As to whether my parents made a map".to_string(),
+                        "of the labyrinth: it would not be helpful. They did not".to_string(),
+                        "publish this information for fear of being called quacks.".to_string(),
+                        "My parents returned to the labyrinth on several occasions".to_string(),
+                        "and each time the passages appeared to have changed. Marks".to_string(),
+                        "that had been left on the wall during their previous".to_string(),
+                        "excursions were missing or were misoriented. The general".to_string(),
+                        "layout was always the same, a series of chambers, some".to_string(),
+                        "with doorways to adjoining chambers, all at right angles".to_string(),
+                        "and apparently oriented with the cardinal directions. As".to_string(),
+                        "they described it to me there are many chambers, all".to_string(),
+                        "similar in appearance with few outside reference points,".to_string(),
+                        "so it was easy to lose one's way.".to_string(),
+                    ],
+                    vec![
+                        "A piece of information that my parents did not publish".to_string(),
+                        "and can only benefit someone who finds the entrance to".to_string(),
+                        "the labyrinth is the existence of a spool of golden thread.".to_string(),
+                        "My parents found it in a chamber near the entrance. Father".to_string(),
+                        "wanted to take it with them when they finally sealed up the".to_string(),
+                        "labyrinth, but mother insisted that it be left for anyone".to_string(),
+                        "who would come later. She called it Ariadne's thread and".to_string(),
+                        "it served well in that role - better than the twine and".to_string(),
+                        "markings my parents first used.".to_string(),
+                    ],
+                     
                 ]);
             }
             if self.parapherna[jj].name == "Lantern".to_string() {
-                self.parapherna[jj].examine = Some(vec![vec![
-                    "A camping lantern you can carry by its handle.".to_string(),
+                self.parapherna[jj].examine_text = Some(vec![vec![
+                    "A kerosene lantern with a carrying handle.".to_string(),
+                    "Its not advisable to light while stored in a backpack.".to_string(),
                 ]]);
             }
             if self.parapherna[jj].name == "Canteen".to_string() {
-                self.parapherna[jj].examine = Some(vec![vec![
-                    "A sealable vessel filled with refreshing water.".to_string(),
+                self.parapherna[jj].examine_text = Some(vec![vec![
+                    "A resealable vessel filled with refreshing water.".to_string(),
                 ]]);
             }
             if self.parapherna[jj].name == "Fruitcake".to_string() {
-                self.parapherna[jj].examine = Some(vec![vec![
-                    "A tin of fruitcake from Grandma.".to_string(),
+                self.parapherna[jj].examine_text = Some(vec![vec![
+                    "A tin of homebaked fruitcake from Grandma.".to_string(),
                 ]]);
             }
             if self.parapherna[jj].name == "Spectacles".to_string() {
-                self.parapherna[jj].examine = Some(vec![vec![
-                    "Needed to read newspapers, letters, etc.".to_string(),
+                self.parapherna[jj].examine_text = Some(vec![vec![
+                    "Prescription wire-rim eyeglasses.".to_string(),
+                    "Essential for reading correspondence, inscriptions, etc.".to_string(),
                 ]]);
             }
             if self.parapherna[jj].name == "Sketchbook".to_string() {
-                self.parapherna[jj].examine = Some(vec![vec![
+                self.parapherna[jj].examine_text = Some(vec![vec![
                     "Blank paper and pen ready to record your observations.".to_string(),
                 ]]);
             }
@@ -188,28 +245,28 @@ impl Paraphernalia {
         }
         for jj in 0..self.parapherna.len() {
             if self.parapherna[jj].name == "Ariadne's Thread".to_string() {
-                self.parapherna[jj].examine = Some(vec![vec![
+                self.parapherna[jj].examine_text = Some(vec![vec![
                     "Golden thread wound on a wooden spool.".to_string(),
                 ]]);
             }
             if self.parapherna[jj].name == "Compass".to_string() {
-                self.parapherna[jj].examine = Some(vec![vec![
+                self.parapherna[jj].examine_text = Some(vec![vec![
                     "An ordinary magnetic compass with a lanyard".to_string(),
-                    "allowing you to wear it around your neck.".to_string(),
+                    "allowing it to be worn around the neck.".to_string(),
                 ]]);
             }
             if self.parapherna[jj].name == "Violet Glasses".to_string() {
-                self.parapherna[jj].examine = Some(vec![vec![
+                self.parapherna[jj].examine_text = Some(vec![vec![
                     "A pair of glasses with purple lenses.".to_string(),
                 ]]);
             }
             if self.parapherna[jj].name == "Astrolabe".to_string() {
-                self.parapherna[jj].examine = Some(vec![vec![
+                self.parapherna[jj].examine_text = Some(vec![vec![
                     "A brass instrument for measuring angles.".to_string(),
                 ]]);
             }
             if self.parapherna[jj].name == "Flask".to_string() {
-                self.parapherna[jj].examine = Some(vec![vec![
+                self.parapherna[jj].examine_text = Some(vec![vec![
                     "A glass flask filled with a dark blue viscous fluid.".to_string(),
                 ]]);
             }
@@ -272,7 +329,7 @@ impl Paraphernalia {
         }
     }
     pub fn draw_paraphernalia(&self, theseus: &Theseus) {
-        let colour: Color = Color::new(0.5, 0.5, 0.5, 0.5);
+        //let colour: Color = Color::new(0.5, 0.5, 0.5, 0.5);
         // delineate body, rucksack, discard
         draw_line(
             TILE,
@@ -411,12 +468,6 @@ impl Paraphernalia {
             GRAY,
         );
         // draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color)
-        //draw_text("HEAD", 2.25 * TILE, 1.625 * TILE, 16.0, colour);
-        //draw_text("LEFT", 1.125 * TILE, 2.375 * TILE, 16.0, colour);
-        //draw_text("HAND", 1.125 * TILE, 2.75 * TILE, 16.0, colour);
-        //draw_text("NECK", 2.25 * TILE, 2.625 * TILE, 16.0, colour);
-        //draw_text("RIGHT", 3.125 * TILE, 2.375 * TILE, 16.0, colour);
-        //draw_text("HAND", 3.125 * TILE, 2.75 * TILE, 16.0, colour);
         draw_text("RUCKSACK", 1.875 * TILE, 3.875 * TILE, 16.0, LIGHTGRAY);
         let (mx, my) = mouse_position();
         let hover_tile_x: u8 = (mx / TILE).trunc() as u8;
@@ -425,9 +476,10 @@ impl Paraphernalia {
         for ii in 0..self.parapherna.len() {
             if self.parapherna[ii].chamber == theseus.chamber
                 && self.parapherna[ii].direction == theseus.direction
+                && self.selected == None
                 && hover_tile_index == self.parapherna[ii].tile
             {
-                draw_text(&self.parapherna[ii].name, 1.0 * TILE, 10.125 * TILE, 16.0, LIGHTGRAY);
+                draw_text(&self.parapherna[ii].name, 1.0 * TILE, 10.125 * TILE, 16.0, GRAY);
             }
             if self.parapherna[ii].chamber == theseus.chamber && self.parapherna[ii].direction == theseus.direction {
                 let (col, row) = self.tile_2_cr(self.parapherna[ii].tile);
@@ -461,7 +513,7 @@ impl Paraphernalia {
                         2.0,
                         GOLD,
                     );
-                    draw_text(&self.parapherna[ii].name, 1.0 * TILE, 9.875 * TILE, 16.0, GOLD);
+                    draw_text(&self.parapherna[ii].name, 1.0 * TILE, 10.125 * TILE, 16.0, GOLD);
                 }
             }
         }

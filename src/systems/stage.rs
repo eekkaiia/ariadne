@@ -16,7 +16,7 @@ use crate::systems::*;
 use crate::entities::*;
 
 const TILE: f32 = 48.0;
-const NUMBER_OF_VIEWS: usize = 4;
+//const NUMBER_OF_VIEWS: usize = 4;
 
 pub struct Stage {
     pub width: f32,
@@ -34,7 +34,15 @@ impl Stage {
         }
     }
     /// update_stage() draw perspective
-    pub fn update(&self, info: &mut Info, control: &mut Control, maze: &Amaze, theseus: &Theseus, paraphernalia: &Paraphernalia) {
+    pub fn update(
+        &self, 
+        info: &mut Info, 
+        control: &mut Control, 
+        maze: &Amaze, 
+        theseus: &Theseus, 
+        paraphernalia: &Paraphernalia,
+        portalia: &Portalia,
+    ) {
         clear_background(info.background);
         // update macroquad parameters
         info.update();
@@ -50,7 +58,8 @@ impl Stage {
         }
         match self.perspective {
             0 => {
-                self.draw_ortho(maze, theseus, paraphernalia);
+                self.draw_ortho(theseus, maze);
+                portalia.draw_portalia(theseus, maze);
                 paraphernalia.draw_paraphernalia(theseus);
                 control.draw_control(0);
                 match paraphernalia.something_illuminated {
@@ -65,8 +74,8 @@ impl Stage {
                 control.draw_control(1);
             },
             2 => {
-                self.draw_grille(maze, theseus);
-                paraphernalia.draw_paraphernalia(theseus);
+                portalia.portals[control.examine_portalia].draw_examine_image_portal(theseus, maze);
+                //paraphernalia.draw_paraphernalia(theseus);
                 control.draw_control(2);
             },
             3 => {
@@ -76,11 +85,12 @@ impl Stage {
                         if paraphernalia.parapherna[ii].disposition == Disposition::OnHead { glasses = true; };
                     }
                 }
-                paraphernalia.parapherna[control.examine].draw_examine_parapherna(control.page, glasses);
+                paraphernalia.parapherna[control.examine_paraphernalia].draw_examine_text_parapherna(control.page, glasses);
                 control.draw_control(3);
             },
             _ => eprintln!("!!!Unexpected view command: {}", &self.perspective),
         }
+        draw_rectangle_lines(0.0, 0.0, self.width, self.depth, 2.0, Color::new(0.5, 0.5, 0.5, 0.5));
         let (mx, my) = mouse_position();
         let hover_tile_x: f32 = (mx / TILE).trunc();
         let hover_tile_y: f32 = (my / TILE).trunc();
@@ -166,55 +176,8 @@ impl Stage {
             );
         }
     }
-    /// draw_grille() displays closeup of window grille
-    fn draw_grille(&self, maze: &Amaze, theseus: &Theseus) {
-        let (col, row, level) = maze.idx_to_xyz(theseus.chamber);
-        let lost_col: f32 = col as f32;
-        let lost_row: f32 = row as f32; 
-        let lost_level: usize = level as usize;
-        let left_col = 5.5 * TILE;
-        let top_row = 1.5 * TILE;
-        let (col, row, _) = maze.idx_to_xyz(maze.start[lost_level]);
-        let start_col: f32 = col as f32;
-        let start_row: f32 = row as f32;
-        let (col, row, _) = maze.idx_to_xyz(maze.end[lost_level]);
-        let end_col: f32 = col as f32;
-        let end_row: f32 = row as f32;
-        draw_texture(
-            maze.level_sheets[lost_level][1],
-            left_col,
-            top_row,
-            Color::new(1.0, 1.0, 1.0, 1.0),
-        );
-        // draw_poly(x: f32, y: f32, sides: u8, radius: f32, rotation: f32, color: Color)
-        draw_poly_lines(
-            left_col + (start_col + 0.5) * maze.texture_cell_sizes[1] as f32,
-            top_row + (start_row + 0.5) * maze.texture_cell_sizes[1] as f32,
-            3,
-            0.3 * maze.texture_cell_sizes[1] as f32,
-            30.0,
-            2.0,
-            LIGHTGRAY,
-        );
-        draw_poly_lines(
-            left_col + (end_col + 0.5) * maze.texture_cell_sizes[1] as f32,
-            top_row + (end_row + 0.5) * maze.texture_cell_sizes[1] as f32,
-            3,
-            0.3 * maze.texture_cell_sizes[1] as f32,
-            -30.0,
-            2.0,
-            LIGHTGRAY,
-        );
-        draw_circle_lines(
-            left_col + (lost_col + 0.5) * maze.texture_cell_sizes[1] as f32,
-            top_row + (lost_row + 0.5) * maze.texture_cell_sizes[1] as f32,
-            0.3 * maze.texture_cell_sizes[1] as f32,
-            1.0,
-            LIGHTGRAY,
-        );
-    }
     /// draw_ortho() displays maze from Theseus' perspective
-    fn draw_ortho(&self, maze: &Amaze, theseus: &Theseus, paraphernalia: &Paraphernalia) {
+    fn draw_ortho(&self, theseus: &Theseus, maze: &Amaze) {
         let (_, _, level) = maze.idx_to_xyz(theseus.chamber);
         let mut colour: Color = DARKGRAY;
         if theseus.chamber == maze.end[level as usize] {
@@ -281,7 +244,7 @@ impl Stage {
                     }
                 }
             },
-            2 => self.draw_front_window(&maze, level as usize),
+            2 => self.draw_front_alcove(),
             3 => self.draw_front_alcove(),
             _ => eprintln!("!!!Unexpected room type: {:?}", &maze.rooms[theseus.chamber][theseus.direction as usize]),
         }
@@ -518,52 +481,6 @@ impl Stage {
             BLACK,
         );
         
-    }
-    fn draw_front_window(&self, maze: &Amaze, level: usize) {
-        draw_rectangle(
-            8.0 * TILE,
-            4.0 * TILE,
-            3.0 * TILE,
-            3.0 * TILE,
-            Color::new(0.2, 0.2, 0.2, 1.0),
-        );
-        draw_line( // vanishing line
-            8.0 * TILE,
-            4.0 * TILE,
-            11.0 * TILE,
-            7.0 * TILE,
-            1.0,
-            BLACK,
-        );
-        draw_line( // vanishing line
-            8.0 * TILE,
-            7.0 * TILE,
-            11.0 * TILE,
-            4.0 * TILE,
-            1.0,
-            BLACK,
-        );
-        draw_rectangle(
-            8.0 * TILE + 9.0,
-            4.0 * TILE + 9.0,
-            maze.level_sheets[level][0].width(),
-            maze.level_sheets[level][0].height(),
-            BLACK,
-        );
-        draw_texture(
-            maze.level_sheets[level][0],
-            8.0 * TILE + 9.0,
-            4.0 * TILE + 9.0,
-            Color::new(1.0, 1.0, 1.0, 1.0),
-        );
-        draw_rectangle_lines( // outer corner
-            8.0 * TILE,
-            4.0 * TILE,
-            3.0 * TILE,
-            3.0 * TILE,
-            2.0,
-            BLACK,
-        );
     }
     fn draw_front_alcove(&self) {
         draw_rectangle(

@@ -16,27 +16,28 @@ use crate::systems::*;
 use crate::entities::*;
 
 const TILE: f32 = 48.0;
-const NUMBER_OF_VIEWS: usize = 3;
+const NUMBER_OF_VIEWS: usize = 4;
 
 pub struct Control {
     pub name: Vec<String>,
     pub tile: Vec<u8>,
     pub active_controls: Vec<bool>,
-    pub examine: usize,
+    pub examine_paraphernalia: usize,
+    pub examine_portalia: usize,
     pub page: usize,
     pub user_decided_to_exit: bool,
 }
 impl Control {
     pub fn new() -> Self {
         let name: Vec<String> = vec![
-            "UP".to_string(),
-            "DOWN".to_string(),
-            "LEFT".to_string(),
-            "RIGHT".to_string(),
-            "FORWARD".to_string(),
-            "EXAMINE".to_string(),
-            "UNDO".to_string(),
-            "CLOSE".to_string(),
+            "UP [UP ARROW]".to_string(),
+            "DOWN [DOWN ARROW]".to_string(),
+            "LEFT [LEFT ARROW]".to_string(),
+            "RIGHT [RIGHT ARROW]".to_string(),
+            "FORWARD [SPACEBAR]".to_string(),
+            "EXAMINE [E]".to_string(),
+            "UNDO [BACKSPACE]".to_string(),
+            "CLOSE [Q]".to_string(),
         ];
         let tile: Vec<u8> = vec![73, 111, 91, 93, 92, 148, 149, 150];
         let active_controls: Vec<bool> = vec![false, false, false, false, false, false, false, false];
@@ -44,12 +45,20 @@ impl Control {
             name,
             tile,
             active_controls,
-            examine: 0,
+            examine_paraphernalia: 0,
+            examine_portalia: 0,
             page: 0,
             user_decided_to_exit: false,
         }
     }
-    pub fn update(&mut self, stage: &mut Stage, maze: &mut Amaze, theseus: &mut Theseus, paraphernalia: &mut Paraphernalia) {
+    pub fn update(
+        &mut self, 
+        stage: &mut Stage, 
+        maze: &mut Amaze, 
+        theseus: &mut Theseus, 
+        paraphernalia: &mut Paraphernalia,
+        portalia: &mut Portalia,
+    ) {
         match stage.perspective {
             0 => { // orthoview
                 // keyboard input
@@ -76,6 +85,22 @@ impl Control {
                             1 => theseus.direction = 2,
                             2 => theseus.direction = 3,
                             _ => eprintln!("!!!Unexpected direction char: {:?}", &theseus.direction),
+                        }
+                    },
+                    Some(KeyCode::E) => {
+                        match portalia.selected {
+                            None => (),
+                            Some(item) => {
+                                self.examine_portalia = item;
+                                stage.perspective = 2;
+                            },
+                        }
+                        match paraphernalia.selected {
+                            None => (),
+                            Some(item) => {
+                                self.examine_paraphernalia = item;
+                                stage.perspective = 3;
+                            },
                         }
                     },
                     Some(KeyCode::Space) => {
@@ -131,11 +156,18 @@ impl Control {
                                 _ => eprintln!("!!!Unexpected direction char: {:?}", &theseus.direction),
                             }
                         },
-                        148 => { // TODO - examine button
+                        148 => {
+                            match portalia.selected {
+                                None => (),
+                                Some(item) => {
+                                    self.examine_portalia = item;
+                                    stage.perspective = 2;
+                                },
+                            }
                             match paraphernalia.selected {
                                 None => (),
                                 Some(item) => {
-                                    self.examine = item;
+                                    self.examine_paraphernalia = item;
                                     stage.perspective = 3;
                                 },
                             }
@@ -144,33 +176,45 @@ impl Control {
                         _ => (),
                     }
                     
-                    let mut new_selected: Option<usize> = None;
+                    let mut new_paraphernalia_selected: Option<usize> = None;
+                    let mut new_portalia_selected: Option<usize> = None;
                     for ii in 0..paraphernalia.parapherna.len() {
                         if paraphernalia.parapherna[ii].tile == tile_index
                             && paraphernalia.parapherna[ii].chamber == theseus.chamber
                             && paraphernalia.parapherna[ii].direction == theseus.direction
-                        { new_selected = Some(ii); };
+                        { new_paraphernalia_selected = Some(ii); };
+                    }
+                    for ii in 0..portalia.portals.len() {
+                        for jj in 0..portalia.portals[ii].tiles.len() {
+                            if portalia.portals[ii].tiles[jj] == tile_index
+                                && portalia.portals[ii].chamber == theseus.chamber
+                                && portalia.portals[ii].direction == theseus.direction
+                            { new_portalia_selected = Some(ii); };
+                        }
                     }
                     // rewritten match
-                    if paraphernalia.selected == None {
+                    if paraphernalia.selected == None && portalia.selected == None {
                         for ii in 0..paraphernalia.parapherna.len() {
                             if paraphernalia.parapherna[ii].tile == tile_index
                                 && paraphernalia.parapherna[ii].chamber == theseus.chamber
                                 && paraphernalia.parapherna[ii].direction == theseus.direction
                             { paraphernalia.selected = Some(ii); };
                         }
-                        if paraphernalia.selected == None {
-                            if maze.rooms[theseus.chamber][theseus.direction as usize] == 2
-                                && (tile_index == 84 || tile_index == 85 || tile_index == 86
-                                || tile_index == 103 || tile_index == 104 || tile_index == 105
-                                || tile_index == 122 || tile_index == 123 || tile_index == 124)
-                            {
-                                stage.perspective = 2;
+                        for ii in 0..portalia.portals.len() {
+                            for jj in 0..portalia.portals[ii].tiles.len() {
+                                if portalia.portals[ii].tiles[jj] == tile_index
+                                    && portalia.portals[ii].chamber == theseus.chamber
+                                    && portalia.portals[ii].direction == theseus.direction
+                                { portalia.selected = Some(ii); };
                             }
                         }
-                    } else if new_selected != None && new_selected != paraphernalia.selected {
-                        paraphernalia.selected = new_selected;
-                    } else {
+                    } else if new_paraphernalia_selected != None && new_paraphernalia_selected != paraphernalia.selected {
+                        paraphernalia.selected = new_paraphernalia_selected;
+                        portalia.selected = None;
+                    } else if new_portalia_selected != None && new_portalia_selected != portalia.selected {
+                        portalia.selected = new_portalia_selected;
+                        paraphernalia.selected = None;
+                    } else if paraphernalia.selected != None {
                         let index: usize = paraphernalia.selected.expect("!!!Unexpected None");
                         match tile_index {
                             21 => {
@@ -271,6 +315,8 @@ impl Control {
                             },
                             _ => paraphernalia.selected = None,
                         }
+                    } else {
+                        portalia.selected = None;
                     }
                 }
             },
@@ -297,7 +343,7 @@ impl Control {
                         stage.perspective += 1;
                         stage.perspective %= NUMBER_OF_VIEWS;
                     },
-                    Some(KeyCode::Q) => self.user_decided_to_exit = true,
+                    Some(KeyCode::Q) => stage.perspective = 0,
                     Some(KeyCode::S) => { // 'secret' key to go to next level
                         for mm in 0..maze.end.len() - 1 {
                             if theseus.chamber == maze.end[mm] {
@@ -349,7 +395,7 @@ impl Control {
                         stage.perspective += 1;
                         stage.perspective %= NUMBER_OF_VIEWS;
                     },
-                    Some(KeyCode::Q) => self.user_decided_to_exit = true,
+                    Some(KeyCode::Q) => stage.perspective = 0,
                     _ => (),
                 }
                 // mouse input
@@ -367,11 +413,20 @@ impl Control {
             3 => {
                 // keyboard input
                 match get_last_key_pressed() {
+                    Some(KeyCode::Left) => {
+                        if self.page > 0 { self.page -= 1; };
+                    },
+                    Some(KeyCode::Right) => {
+                        self.page += 1;
+                    },
                     Some(KeyCode::P) => {
                         stage.perspective += 1;
                         stage.perspective %= NUMBER_OF_VIEWS;
                     },
-                    Some(KeyCode::Q) => self.user_decided_to_exit = true,
+                    Some(KeyCode::Q) => {
+                        stage.perspective = 0;
+                        self.page = 0;
+                    },
                     _ => (),
                 }
                 // mouse input
@@ -559,7 +614,7 @@ impl Control {
             colour,
         );
     }
-    fn draw_examine(&self) { // 'Examine' button
+    fn draw_examine(&self) { // 'examine' button
         let (col, row) = self.tile_2_cr(self.tile[5]);
         let mut colour: Color = DARKGRAY;
         let mut thickness: f32 = 1.0;

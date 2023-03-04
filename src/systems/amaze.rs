@@ -33,7 +33,7 @@ pub struct Amaze {
     pub level: usize,
     pub start: Vec<usize>,  // starting cell for each level
     pub end: Vec<usize>,    // end of maze for each level
-    pub rooms: Vec<[u8; 6]>,
+    pub rooms: Vec<[u8; 6]>, // [E, S, W, N, U, D] with 0 = plain wall, 1 = portal, 2 = window, 3 = alcove, tbd
     pub visited: Vec<bool>,
     pub solutions: Vec<Vec<usize>>,
     pub thread: Vec<usize>, // thread is a stack for tracking ariadne's method of returning to starting point
@@ -53,7 +53,6 @@ impl Amaze {
         let thread: Vec<usize> = Vec::new();
         let level_sheets: Vec<Vec<Texture2D>> = Vec::new();        
         let texture_cell_sizes: Vec<usize> = vec![5, 15, 20];
-        
         Self {
             width,
             depth,
